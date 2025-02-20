@@ -30,13 +30,15 @@ dependencies {
     implementation("io.ktor:ktor-serialization-kotlinx-json")
     implementation("org.mongodb:mongodb-driver-core:$mongo_version")
     implementation("org.mongodb:mongodb-driver-sync:$mongo_version")
-    implementation("org.litote.kmongo:kmongo:4.10.0") // Latest version
+    implementation("org.litote.kmongo:kmongo:4.10.0")
     implementation("io.ktor:ktor-server-auth")
+    implementation("io.ktor:ktor-server-sessions")
     implementation("io.ktor:ktor-server-netty")
     implementation("ch.qos.logback:logback-classic:$logback_version")
     implementation("io.ktor:ktor-server-config-yaml")
     testImplementation("io.ktor:ktor-server-test-host")
     testImplementation("org.jetbrains.kotlin:kotlin-test-junit:$kotlin_version")
-    implementation("io.ktor:ktor-server-html-builder:2.3.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.7.5")
+    implementation("io.ktor:ktor-server-html-builder:3.0.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-html-jvm:0.11.0")
+
 }

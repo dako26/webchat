@@ -12,7 +12,7 @@ import org.bson.types.ObjectId
 import org.mindrot.jbcrypt.BCrypt
 
 @Serializable
-data class UserSession(val username: String)
+data class UserSession(val username: String, val login: Boolean)
 @Serializable
 data class Users(
     val username: String,

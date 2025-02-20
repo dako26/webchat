@@ -5,10 +5,14 @@ import org.litote.kmongo.KMongo
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
+
 }
 
+
 fun Application.module() {
-    val database = KMongo.createClient().getDatabase("myDatabase")
+
+
+    val database = connectToMongoDB()
     val userService = UserService(database)
 
     configureSockets()

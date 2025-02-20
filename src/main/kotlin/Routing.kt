@@ -2,6 +2,7 @@ package com.example
 
 import com.mongodb.client.*
 import io.ktor.http.*
+import io.ktor.http.ContentDisposition.Companion.File
 import io.ktor.server.html.*
 import kotlinx.html.*
 import io.ktor.server.application.*
@@ -15,9 +16,13 @@ import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
+import kotlinx.coroutines.delay
 import org.mindrot.jbcrypt.BCrypt
 import kotlinx.html.dom.createHTMLDocument
+import java.io.File
+import java.lang.Thread.sleep
 import kotlin.time.Duration.Companion.seconds
+
 
 fun Application.configureRouting(userService: UserService) {
     routing {
@@ -81,15 +86,12 @@ fun Application.configureRouting(userService: UserService) {
 
             // Retrieve the user by username
             val user = userService.findByUsername(username)
-            if (user != null && user.hashedPassword != null) {
-                println(BCrypt.hashpw("da", user.salt))
-            }
             if (user != null && user.hashedPassword != null && BCrypt.checkpw(password, user.hashedPassword)) {
                 val hashedInputPassword = BCrypt.hashpw(password, user.salt)
                 // Set session and respond with success
                 if (hashedInputPassword == user.hashedPassword) {
-                    call.sessions.set(UserSession(user.username))
-                    call.respond(HttpStatusCode.OK, "Login successful")
+                    call.sessions.set(UserSession(user.username, true))
+                    call.respondRedirect("/ws")
                 } else {
                     call.respond(HttpStatusCode.Unauthorized, "Invalid credentials")
                 }
@@ -142,7 +144,24 @@ fun Application.configureRouting(userService: UserService) {
 
             // Respond with success
             call.respond(HttpStatusCode.Created, "User registered successfully")
+
         }
+        get("/ws") {
+            val userSession = call.sessions.get<UserSession>()
+            if (userSession == null || !userSession.login) {
+                call.respondRedirect("/login")
+                return@get
+            }
+            val file = File("src/main/resources/ws.html")
+            if (file.exists()) {
+                call.respondFile(file)
+            } else {
+                call.respond(HttpStatusCode.NotFound, "File not found")
+            }
+        }
+
     }
 }
+
+
 

@@ -8,21 +8,29 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.util.pipeline.*
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.withContext
-import org.bson.types.ObjectId
 
 fun Application.configureDatabases() {
     val mongoDatabase = connectToMongoDB()
     val users = UserService(mongoDatabase)
+    val telegrams = TelegramService(mongoDatabase)
 
     routing {
+        post("/telegram") {
+            val telegram = call.receive<Telegram>()
+            telegrams.saveMessage(telegram)
+            call.respond(HttpStatusCode.Created, mapOf("sender" to telegram.sender, "message" to telegram.message))
+        }
+        get("/telegram") {
+            val allTelegrams = telegrams.getAllMessages()
+            call.respond(HttpStatusCode.OK, allTelegrams)
+        }
         // Create user
         post("/users") {
             val user = call.receive<Users>()
             val id = users.create(user)
             call.respond(HttpStatusCode.Created, mapOf("id" to id))
         }
+
 
         // Read user
         get("/users/{id}") {
