@@ -7,7 +7,6 @@ import io.ktor.server.config.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.util.pipeline.*
 
 fun Application.configureDatabases() {
     val mongoDatabase = connectToMongoDB()

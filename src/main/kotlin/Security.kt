@@ -13,7 +13,6 @@ import kotlinx.serialization.json.Json
 fun Application.configureSecurity(userService: UserService) {
     install(Sessions) {
         cookie<UserSession>("user_session") {
-            cookie.extensions["SameSite"] = "lax"
         }
     }
     install(ContentNegotiation) {
