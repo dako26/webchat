@@ -1,6 +1,7 @@
 package com.example
 
 import io.ktor.server.application.*
+import javax.xml.crypto.Data
 
 fun main(args: Array<String>) {
     io.ktor.server.netty.EngineMain.main(args)
@@ -9,12 +10,12 @@ fun main(args: Array<String>) {
 
 
 fun Application.module() {
-    val database = connectToMongoDB()
+    Database.initialize(environment)
+    val database = Database.instance
     val userService = UserService(database)
 
     configureSecurity(userService)
     configureSockets()
-    configureSerialization()
     configureDatabases()
     configureRouting(userService)
 }

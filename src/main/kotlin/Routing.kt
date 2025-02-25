@@ -74,17 +74,17 @@ fun Application.configureRouting(userService: UserService) {
 
             // Retrieve the user by username
             val user = userService.findByUsername(username)
-            if (user?.hashedPassword != null && BCrypt.checkpw(password, user.hashedPassword)) {
-                val hashedInputPassword = BCrypt.hashpw(password, user.salt)
-                // Set session and respond with success
-                if (hashedInputPassword == user.hashedPassword) {
-                    call.sessions.set(UserSession(user.username, true))
-                    call.respondRedirect("/ws")
-                } else {
-                    call.respond(HttpStatusCode.Unauthorized, "Invalid credentials")
-                }
-            } else {
+            if (user?.hashedPassword == null || BCrypt.checkpw(password, user.salt)) {
                 // Respond with Unauthorized if invalid credentials
+                call.respond(HttpStatusCode.Unauthorized, "Invalid credentials")
+                return@post
+            }
+
+            // Set session and respond with success
+            if (BCrypt.hashpw(password, user.salt) == user.hashedPassword) {
+                call.sessions.set(UserSession(user.username, true))
+                call.respondRedirect("/ws")
+            } else {
                 call.respond(HttpStatusCode.Unauthorized, "Invalid credentials")
             }
         }
@@ -140,6 +140,7 @@ fun Application.configureRouting(userService: UserService) {
                 call.respondRedirect("/login")
                 return@get
             }
+
             val file = File("src/main/resources/ws.html")
             if (file.exists()) {
                 call.respondFile(file)
