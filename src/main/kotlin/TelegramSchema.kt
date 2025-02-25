@@ -10,17 +10,11 @@ import org.bson.Document
 
 @Serializable
 data class Telegram(
-    val sender: String? = null,
-    val message: String? =null
+    val sender: String,
+    val message: String
 
 ) {
     fun toDocument(): Document {
-        if (sender == null) {
-            throw IllegalArgumentException("sender cannot be null")
-        }
-        if (message == null) {
-            throw IllegalArgumentException("message cannot be null")
-        }
         return Document("sender", sender)
             .append("message", message)
     }
@@ -35,11 +29,11 @@ data class Telegram(
 }
 
 
-class TelegramService(private val database: MongoDatabase) {
+class TelegramService(database: MongoDatabase) {
     private val collection: MongoCollection<Document> = database.getCollection("telegram")
 
     // Save message
-    suspend fun saveMessage(telegram: Telegram) {
+    fun saveMessage(telegram: Telegram) {
         val doc = telegram.toDocument().append("timestamp", System.currentTimeMillis())
         collection.insertOne(doc)
     }

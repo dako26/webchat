@@ -7,66 +7,42 @@ import io.ktor.server.sessions.*
 import io.ktor.server.websocket.*
 import io.ktor.websocket.*
 import kotlinx.serialization.json.Json
-import java.util.concurrent.ConcurrentHashMap
 import org.slf4j.LoggerFactory
-
+import java.util.concurrent.ConcurrentHashMap
+import com.example.WebSocketFrameHandlers
+import com.example.DefaultWebSocketFrameHandler
 fun Application.configureSockets() {
     install(WebSockets)
 
-    val telegramService = TelegramService(this.connectToMongoDB())
+    val telegramService = TelegramService(Database.instance)
     val connections = ConcurrentHashMap.newKeySet<DefaultWebSocketSession>()
     val logger = LoggerFactory.getLogger("WebSocketServer")
+    val frameHandler: WebSocketFrameHandlers=DefaultWebSocketFrameHandler(telegramService,connections,logger)
 
-    suspend fun DefaultWebSocketSession.handleWebSocket(username : String) {
+    suspend fun DefaultWebSocketSession.handleWebSocket(username: String) {
         // Handle WebSocket communication here
         connections.add(this)
         try {
             send("Connected to chat!")
             logger.info("User $username connected")
             val allMessage = telegramService.getAllMessages()
-            allMessage.forEach {message -> send("${message.sender} : ${message.message}")}
+            allMessage.forEach { message -> send("${message.sender} : ${message.message}") }
             for (frame in incoming) {
                 when (frame) {
-                    is Frame.Text -> {
-                        val receivedText = frame.readText()
-                        val json = Json.decodeFromString<Map<String, String>>(receivedText)
-                        val telegram = Telegram(username, json["message"])
-                        telegramService.saveMessage(telegram)
-                        connections.forEach({ it.send("${telegram.sender}: ${telegram.message}") })
-                    }
+                    is Frame.Text -> frameHandler.handleText(this ,frame,username)
+                    is Frame.Close -> frameHandler.handleClose(this,frame,username)
+                    else -> frameHandler.handleOther(this,frame,username)
 
-                    is Frame.Binary -> {
-                        val receivedBytes = frame.readBytes()
-                        send("Recevied binary data of size: ${receivedBytes.size} bytes")
-                    }
-
-                    is Frame.Close -> {
-                        val closeReason = frame.readReason() ?: CloseReason(CloseReason.Codes.NORMAL, "Client closed")
-                        logger.info("User $username closed connection: ${closeReason.code} - ${closeReason.message}")
-                        close(closeReason)
-                        connections.forEach({ it.send("$username has left the chat") })
-                    }
-
-                    is Frame.Ping -> {
-                        send(Frame.Pong(frame.buffer))
-                    }
-
-                    is Frame.Pong -> {
-                        println("Received Pong frame")
-                    }
-
-                    else -> {
-                        println("Received an unknown frame type")
-                    }
                 }
             }
             logger.warn("User $username crashed or lost connection")
             close(CloseReason(CloseReason.Codes.GOING_AWAY, "Server detected client crash"))
-            connections.forEach({ it.send("$username has disconnected unexpectedly") })
+            connections.forEach { it.send("$username has disconnected unexpectedly") }
         } finally {
             connections.remove(this)
         }
     }
+
     routing {
         authenticate {
             webSocket("/ws") {
